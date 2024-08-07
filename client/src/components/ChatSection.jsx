@@ -1,14 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import PropTypes from "prop-types";
 import { Avatar, Input } from "antd";
 const { Search } = Input;
 import { LuCircleDashed } from "react-icons/lu";
 import { BsArchive } from "react-icons/bs";
 import { UserOutlined } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 
-const ChatSection = ({ chatData }) => {
+const ChatSection = ({ chatData, setSelectedChat }) => {
+  const navigate = useNavigate();
   ChatSection.propTypes = {
     chatData: PropTypes.array.isRequired,
+    setSelectedChat: PropTypes.any,
   };
   const onSearch = () => {};
 
@@ -32,10 +35,17 @@ const ChatSection = ({ chatData }) => {
       </div>
       {chatData?.map((chat) => {
         return (
-          <div key={chat?.id} className="flex justify-around bg-[#F8F9FA] p-3">
+          <div
+            key={chat?._id?.toString()}
+            className="flex justify-around bg-[#F8F9FA] p-3"
+            onClick={() => {
+              setSelectedChat(chat);
+              navigate(`/dashboard/chat/${chat?._id}`);
+            }}
+          >
             <Avatar size={48} icon={<UserOutlined />} />
             <div className="text-sm">
-              {chat?.name} <br />
+              {chat?.contactedUserDetails?.name} <br />
               {chat?.latestMessage}
             </div>
             <div className="text-xs font-thin">{chat?.lastTime}</div>

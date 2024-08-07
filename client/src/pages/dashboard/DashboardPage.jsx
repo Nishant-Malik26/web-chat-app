@@ -4,11 +4,11 @@ import Dashboard from "../../components/Dashboard.jsx";
 
 const DashboardPage = () => {
   return (
-    <div>
+    <>
       <WithLayout>
         <Dashboard />
       </WithLayout>
-    </div>
+    </>
   );
 };
 
