@@ -2,140 +2,137 @@ const express = require("express");
 const Chat = require("../models/Chat");
 const User = require("../models/User");
 const Message = require("../models/Message");
+const { v4: uuidv4 } = require("uuid"); // To generate unique chat IDs
 
 const router = express.Router();
-//CREATe new chat
+
+// Create or retrieve chat
 router.post("/", async (req, res) => {
-  const { owner, contactedUser } = req?.body;
+  const { user1, user2 } = req.body;
 
   try {
-    const contactedUserId = await User.findOne({
-      email: contactedUser,
-    });
-    const ownerId = await User.findOne({
-      email: owner,
-    });
-    const chat = await Chat.findOne({
-      owner: ownerId?._id?.toString(),
-      contactedUser: contactedUserId?._id?.toString(),
+    const contactedUserDoc = await User.findOne({ email: user2 });
+    const ownerDoc = await User.findOne({ email: user1 });
+
+    if (!contactedUserDoc && !ownerDoc) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Find or create a chat between the two users
+    let chat = await Chat.findOne({
+      participants: {
+        $all: [
+          { $elemMatch: { id: ownerDoc._id, name: ownerDoc?.name } },
+          {
+            $elemMatch: {
+              id: contactedUserDoc._id,
+              name: contactedUserDoc?.name,
+            },
+          },
+        ],
+      },
     });
 
-    if (chat) {
-      return res
-        .status(200)
-        .json({ chat: { ...chat?._doc, id: chat?._doc?._id?.toString() } });
-    } else {
-      const newChat = Chat({
-        owner: ownerId?._id?.toString(),
-        contactedUser: contactedUserId?._id?.toString(),
-      });
-      const chatX = await newChat.save();
-      return res.status(201).json({
-        chat: { ...chatX?._doc, id: chatX?._doc?._id?.toString() },
+    // If no chat is found, create a new one
+    if (!chat) {
+      chat = await Chat.create({
+        participants: [
+          { id: ownerDoc._id, name: ownerDoc?.name },
+          { id: contactedUserDoc._id, name: contactedUserDoc?.name },
+        ],
       });
     }
+
+    return res.status(200).json({
+      chat: {
+        isBlocked: chat?.isBlocked,
+        isArchived: chat?.isArchived,
+        participants: chat.participants.map((participant) => {
+          return {
+            id: participant?._id?.toString(),
+            name: participant?.name,
+          };
+        }),
+        id: chat._id.toString(),
+      },
+    });
   } catch (error) {
-    return res.status(500).json({ error });
+    return res.status(500).json({ error: error.message });
   }
 });
 
-// get all chats for a user
+//Get all chats for a user
 router.get("/:email", async (req, res) => {
-  const { email } = req?.params;
-  //   console.log("🚀 ~ router.get ~ email:", email);
-  try {
-    const id = await User.findOne({ email });
-    console.log("🚀 ~ router.get ~ id:", id);
-    const response = await Chat.aggregate([
-      {
-        $match: {
-          owner: id?._id,
-        },
-      },
-      {
-        $lookup: {
-          from: "users",
-          localField: "contactedUser",
-          foreignField: "_id",
-          as: "contactedUserDetails",
-        },
-      },
-      {
-        $unwind: "$contactedUserDetails",
-      },
+  const { email } = req.params;
 
-      
-      //   ,
-      //   {
-      //     $lookup: {
-      //       from: "message",
-      //       let: { chatId: "$_id" },
-      //       pipeline: [
-      //         { $match: { $expr: { $eq: ["$chat", "$$chatId"] } } },
-      //         { $unwind: "$message" },
-      //         { $sort: { "message.time": -1 } },
-      //         { $limit: 1 },
-      //       ],
-      //       as: "lastMessage",
-      //     },
-      //   },
-      //   {
-      //     $unwind: { path: "$lastMessage", preserveNullAndEmptyArrays: true },
-      //   },
-      //   {
-      //     $project: {
-      //       _id: 1,
-      //       owner: 1,
-      //       contactedUser: 1,
-      //       "contactedUserDetails.name": 1,
-      //       isBlocked: 1,
-      //       isArchived: 1,
-      //       lastMessageText: { $ifNull: ["$lastMessage.message.text", null] },
-      //       lastMessageTime: { $ifNull: ["$lastMessage.message.time", null] },
-      //     },
-      //   },
-    ]);
-    console.log(response);
-    if (!response?.length) {
-      return res.status(400).json({ error: "No chats found" });
-    } else {
-      return res.status(200).json({ chat: response });
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
     }
+
+    const chats = await Chat.find({
+      participants: { $elemMatch: { id: user._id, name: user?.name } },
+      // { participants: [contactedUserDoc._id, ownerDoc._id] },
+    });
+
+    if (!chats.length) {
+      return res.status(404).json({ error: "No chats found" });
+    }
+
+    return res.status(200).json({ chats });
   } catch (error) {
-    return res.status(500).json({ error, chat: [] });
+    return res.status(500).json({ error: error.message });
   }
 });
 
-// get a chat
-router.get("/:id", async (req, res) => {
-  //   const email = req?.body;
+// Get a chat by ID
+router.get("/chat/:id", async (req, res) => {
   const { id } = req.params;
+
   try {
-    // const user = await User.findById({ email });
-    const response = await Chat.findById(id);
-    if (!response?.length) {
-      return res.status(400).json({ error: "No chats found" });
-    } else {
-      return res.status(200).json({ response });
+    const chat = await Chat.findById(id);
+
+    if (!chat) {
+      return res.status(404).json({ error: "Chat not found" });
     }
+
+    return res.status(200).json({ chat });
   } catch (error) {
-    return res.status(500).json({ error, chat: [] });
+    return res.status(500).json({ error: error.message });
   }
 });
 
-// get all messages from a chat
-router.get("/messages", async (req, res) => {
-  const id = req?.body;
+// Get all messages from a chat
+router.get("/messages/:id", async (req, res) => {
+  const { id } = req.params;
+
   try {
-    const response = await Message.findById(id);
-    const messages = await response.json();
-    if (!response?.ok) {
-      return res.status(400).json({ error: "No messages found", messages: [] });
-    } else {
-      return res.status(200).json({ messages });
+    const messages = await Message.findOne({ chat: id });
+    if (!messages) {
+      return res.status(404).json({ error: "Messages not found" });
     }
+    return res.status(200).json({ messages });
   } catch (error) {
-    return res.status(500).json({ error, messages: [] });
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Send a message
+router.post("/messages/:id", async (req, res) => {
+  const { id } = req.params;
+  const data = req.body;
+
+  try {
+    const message = await Message.findOneAndUpdate(
+      { chat: id },
+      { $push: { message: data } },
+      { new: true, upsert: true },
+    );
+
+    return res.status(201).json({ messages: message });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
 });
 

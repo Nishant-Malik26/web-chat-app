@@ -1,22 +1,27 @@
 const mongoose = require("mongoose");
 
-const ChatSchema = new mongoose.Schema({
-  owner: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "user",
+const ChatSchema = new mongoose.Schema(
+  {
+    participants: [
+      {
+        id: { type: mongoose.Schema.Types.String, ref: "user" },
+        name: { type: String },
+      },
+    ],
+    isBlocked: {
+      type: Boolean,
+      default: false,
+    },
+    isArchived: {
+      type: Boolean,
+      default: false,
+    },
+    contactedUserDetails: {
+      type: Object,
+      required: false,
+    },
   },
-  contactedUser: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "user",
-  },
-  isBlocked: {
-    type: Boolean,
-    default: false,
-  },
-  isArchived: {
-    type: Boolean,
-    default: false,
-  },
-});
+  { timestamps: true },
+);
 
-module.exports = mongoose.model("chat", ChatSchema);
+module.exports = mongoose.model("Chat", ChatSchema);

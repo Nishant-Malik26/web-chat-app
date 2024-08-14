@@ -5,23 +5,13 @@ import { BsEmojiSmile } from "react-icons/bs";
 import { AiOutlineSend } from "react-icons/ai";
 import PropTypes from "prop-types";
 
-const ChatFooter = ({ ws, chat }) => {
-  console.log("🚀 ~ ChatFooter ~ chat:", chat);
-  const [value, setValue] = useState("");
+const ChatFooter = ({ sendMessage, setValue, value }) => {
   ChatFooter.propTypes = {
-    ws: PropTypes.any,
+    sendMessage: PropTypes.func,
     chat: PropTypes.object,
-  };
-  const handleSendMessage = () => {
-    ws.send(
-      JSON.stringify({
-        
-        text: value,
-        owner: localStorage.getItem("email"),
-        contactedUser: chat?.contactedUser,
-        onlineStatus: 1,
-      })
-    );
+    setValue: PropTypes.any,
+    value: PropTypes.any,
+    
   };
 
   return (
@@ -33,7 +23,7 @@ const ChatFooter = ({ ws, chat }) => {
         addonAfter={<BsEmojiSmile />}
         placeholder="Write a message"
       />
-      <AiOutlineSend size={34} onClick={handleSendMessage} />
+      <AiOutlineSend size={34} onClick={sendMessage} />
     </div>
   );
 };

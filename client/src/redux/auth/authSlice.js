@@ -18,11 +18,12 @@ export const login = createAsyncThunk(
       localStorage.setItem("isAuthenticated", true);
       localStorage.setItem("userData", data?.token);
       localStorage.setItem("email", data?.email);
+      localStorage.setItem("userId", data?.userId);
       return data;
     } catch (error) {
       return rejectWithValue(error?.message);
     }
-  }
+  },
 );
 
 export const logout = createAsyncThunk(
@@ -44,7 +45,7 @@ export const logout = createAsyncThunk(
     } catch (error) {
       return rejectWithValue({ error: "server down" });
     }
-  }
+  },
 );
 
 export const signup = createAsyncThunk(
@@ -66,7 +67,7 @@ export const signup = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 const authSlice = createSlice({

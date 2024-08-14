@@ -40,15 +40,17 @@ router.post("/signup", async (req, res) => {
         } else {
           let options = {
             maxAge: 1000 * 60 * 30,
-             httpOnly: true, // The cookie only accessible by the web server
+            httpOnly: true, // The cookie only accessible by the web server
           };
 
-          return res
-            .status(201)
-            .cookie("token", token, options)
-            .json({ message: "User is succeefully signed in", token });
+          return res.status(201).cookie("token", token, options).json({
+            message: "User is succeefully signed in",
+            token,
+            email: user.email,
+            userId: payload?.id,
+          });
         }
-      }
+      },
     );
   } catch (error) {
     console.log("🚀 ~ router.post ~ error:", error);
@@ -67,5 +69,17 @@ router.get("/users", async (req, res) => {
     return res.status(500).json({ error });
   }
 });
+
+// router.get("users/:id", async (req, res) => {
+//   try {
+//     const user = await User.findById(id);
+//     if (!user) {
+//       return res.status(404).json({ error: "No user found" });
+//     }
+//     return res.status(200).json({ ...user });
+//   } catch (error) {
+//     return res.status(500).json({ error });
+//   }
+// });
 
 module.exports = router;

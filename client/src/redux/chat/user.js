@@ -21,7 +21,7 @@ export const fetchAllUsers = createAsyncThunk(
     } catch (err) {
       return rejectWithValue(err);
     }
-  }
+  },
 );
 
 const userSlice = createSlice({

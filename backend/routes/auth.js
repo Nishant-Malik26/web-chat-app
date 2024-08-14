@@ -43,9 +43,10 @@ router.post("/login", async (req, res) => {
               message: "User is successfully signed in",
               token,
               email: user.email,
+              userId: payload?.id,
             });
           }
-        }
+        },
       );
     } else {
       return res
